@@ -2,7 +2,7 @@
 Imports System.Text.RegularExpressions
 
 Module Module1
-    Const TARGET_URL As String = "http://kowo.me/"
+    Const TARGET_URL As String = "https://www.olx.ua/"
 
     Const QUOTE As Char = Chr(34)
     Const DOWNLOAD_FOLDER As String = "downloaded\"
@@ -29,7 +29,7 @@ Module Module1
                 Console.WriteLine(" File exists!")
                 Exit Sub
             End If
-            download.DownloadFile(New Uri(url), DOWNLOAD_FOLDER & targetPath)
+            download.DownloadFileAsync(New Uri(url), DOWNLOAD_FOLDER & targetPath)
             Console.WriteLine(" OK!")
         Catch ex As Exception
             Console.WriteLine(" ERROR:" & ex.Message)
@@ -73,8 +73,14 @@ Module Module1
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     Sub iterateUrls(url As String)
         For Each Str As String In visited
-            If Str.Contains(url) Then
-                Exit Sub
+            If url <> "" Then
+                Try
+                    If Str.Contains(url) Then
+                        Exit Sub
+                    End If
+                Catch ex As Exception
+
+                End Try
             End If
         Next
         ReDim Preserve visited(0 To visited.Count)
@@ -90,13 +96,20 @@ Module Module1
             'Если нашли в списке посещенных текущюю ссылку то просто выходим
             Dim skip As Boolean = False
             For Each Str As String In visited
-                If Str.Contains(Split(match.Item(i).ToString, "=")(1).Trim(QUOTE)) Then
-                    skip = True
-                End If
+                Try
+                    If Str.Contains(Split(match.Item(i).ToString, "=")(1).Trim(QUOTE)) Then
+                        skip = True
+                    End If
+                Catch ex As Exception
+
+                End Try
             Next
             If (skip) Then
                 i = i + 1
             Else
+                'Добавим многопоточности...
+                Dim Thread As New System.Threading.Thread(AddressOf iterateUrls)
+                Thread.Start()
                 iterateUrls(Split(match.Item(i).ToString, "=")(1).Trim(QUOTE))
             End If
         Next
